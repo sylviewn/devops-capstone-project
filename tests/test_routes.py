@@ -20,9 +20,6 @@ DATABASE_URI = os.getenv(
 BASE_URL = "/accounts"
 
 
-######################################################################
-#  T E S T   C A S E S
-######################################################################
 class TestAccountService(TestCase):
     """Account Service Tests"""
 
@@ -38,24 +35,20 @@ class TestAccountService(TestCase):
     @classmethod
     def tearDownClass(cls):
         """Runs once before test suite"""
+        pass
 
     def setUp(self):
         """Runs before each test"""
         db.session.query(Account).delete()  # clean up the last tests
         db.session.commit()
-
         self.client = app.test_client()
 
     def tearDown(self):
         """Runs once after each test case"""
         db.session.remove()
 
-    ######################################################################
-    #  H E L P E R   M E T H O D S
-    ######################################################################
-
     def _create_accounts(self, count):
-        """Factory method to create accounts in bulk"""
+        """Factory method to create accounts in bulk."""
         accounts = []
         for _ in range(count):
             account = AccountFactory()
@@ -63,31 +56,27 @@ class TestAccountService(TestCase):
             self.assertEqual(
                 response.status_code,
                 status.HTTP_201_CREATED,
-                "Could not create test Account",
+                "Could not create test Account"
             )
             new_account = response.get_json()
             account.id = new_account["id"]
             accounts.append(account)
         return accounts
 
-    ######################################################################
-    #  A C C O U N T   T E S T   C A S E S
-    ######################################################################
-
     def test_index(self):
-        """It should get 200_OK from the Home Page"""
+        """Ensure 200_OK from the Home Page."""
         response = self.client.get("/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_health(self):
-        """It should be healthy"""
+        """Check service health."""
         resp = self.client.get("/health")
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
         self.assertEqual(data["status"], "OK")
 
     def test_create_account(self):
-        """It should Create a new Account"""
+        """Create a new Account test."""
         account = AccountFactory()
         response = self.client.post(
             BASE_URL,
@@ -96,7 +85,7 @@ class TestAccountService(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # Make sure location header is set
+        # Ensure location header is set
         location = response.headers.get("Location", None)
         self.assertIsNotNone(location)
 
@@ -109,12 +98,12 @@ class TestAccountService(TestCase):
         self.assertEqual(new_account["date_joined"], str(account.date_joined))
 
     def test_bad_request(self):
-        """It should not Create an Account when sending the wrong data"""
+        """Sending wrong data should not Create an Account."""
         response = self.client.post(BASE_URL, json={"name": "not enough data"})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_unsupported_media_type(self):
-        """It should not Create an Account when sending the wrong media type"""
+        """Ensure sending the wrong media type doesn't create an account."""
         account = AccountFactory()
         response = self.client.post(
             BASE_URL,
@@ -123,9 +112,8 @@ class TestAccountService(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
-    
     def test_get_account(self):
-        """It should Read a single Account"""
+        """Read a single Account test."""
         account = self._create_accounts(1)[0]
         resp = self.client.get(
             f"{BASE_URL}/{account.id}", 
@@ -135,38 +123,32 @@ class TestAccountService(TestCase):
         data = resp.get_json()
         self.assertEqual(data["name"], account.name)
 
-        
     def test_get_account_not_found(self):
-        """It should not Read an Account that is not found"""
+        """Reading an Account that is not found should error."""
         resp = self.client.get(f"{BASE_URL}/0")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
-    
 
     def test_update_account(self):
-        """It should Update an existing Account"""
-        # create an Account to update
+        """Update an existing Account test."""
         test_account = AccountFactory()
         resp = self.client.post(BASE_URL, json=test_account.serialize())
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
 
-        # update the account
         new_account = resp.get_json()
         new_account["name"] = "Something Known"
         resp = self.client.put(f"{BASE_URL}/{new_account['id']}", json=new_account)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         updated_account = resp.get_json()
         self.assertEqual(updated_account["name"], "Something Known")
-    
 
     def test_delete_account(self):
-        """It should Delete an Account"""
+        """Delete an Account test."""
         account = self._create_accounts(1)[0]
         resp = self.client.delete(f"{BASE_URL}/{account.id}")
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
-    
 
     def test_get_account_list(self):
-        """It should Get a list of Accounts"""
+        """Get a list of Accounts test."""
         self._create_accounts(5)
         resp = self.client.get(BASE_URL)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
